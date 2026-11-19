@@ -56,5 +56,5 @@ export function icon(name, size = 18) {
 
 /** Das Gitline-Logo (Verzweigung auf Fuchsia) - gleiches Bild wie assets/icon.png */
 export function logoSvg(size = 64) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gl-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e879f9"/><stop offset="1" stop-color="#a21caf"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="url(#gl-g)"/><g fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round"><path d="M23 22.5v19"/><path d="M41.5 27.5c0 10.5-18.5 7-18.5 14.5"/><circle cx="23" cy="17" r="5.2"/><circle cx="23" cy="47" r="5.2"/><circle cx="41.5" cy="22" r="5.2"/></g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gl-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e879f9"/><stop offset="1" stop-color="#a21caf"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="url(#gl-g)"/><g fill="none" stroke="#fff" stroke-width="4.6"><path d="M23 23.2v17.6M41 29.2c0 10.5-18 5.3-18 11.6"/><circle cx="23" cy="18" r="5.2"/><circle cx="23" cy="46" r="5.2"/><circle cx="41" cy="24" r="5.2"/></g></svg>`;
 }

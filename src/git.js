@@ -696,10 +696,13 @@ async function pull(repo, { rebase = false } = {}, onProgress, id) {
     throw e;
   }
 }
-async function push(repo, { branch, remote = null, setUpstream = false, force = false, tags = false } = {}, onProgress, id) {
+async function push(repo, { branch, remote = null, setUpstream = false, force = false, tags = false, ref = null } = {}, onProgress, id) {
   const args = ['push', '--progress'];
   if (force) args.push('--force-with-lease');
-  if (setUpstream) args.push('-u', remote || 'origin', `HEAD:refs/heads/${branch}`);
+  // ref: ein anderer lokaler Branch als der ausgecheckte
+  const src = ref ? `refs/heads/${ref}` : 'HEAD';
+  if (setUpstream) args.push('-u', remote || 'origin', `${src}:refs/heads/${branch}`);
+  else if (ref) args.push(remote || 'origin', `${src}:refs/heads/${branch}`);
   else if (remote) args.push(remote);
   await run(args, { cwd: repo, onProgress, id });
   if (tags) await run(['push', '--progress', '--tags', remote || 'origin'], { cwd: repo, onProgress, id });
