@@ -22,7 +22,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" \
-            --draft --title "Picline ${{ github.ref_name }}" \
+            --draft --title "Gitline ${{ github.ref_name }}" \
             --notes "Gitline ${{ github.ref_name }} – einfache Oberfläche für Git. Was neu ist: https://mert.win/git/changelog.html — Windows: Setup (aktualisiert sich selbst) oder portabel · Linux: .deb, .pacman, .tar.gz · macOS: .zip für Apple Silicon oder Intel. Git muss installiert sein." \
             || echo "Release existiert schon, weiter."
 
@@ -39,16 +39,16 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      # .pacman braucht bsdtar (libarchive-tools), das auf ubuntu-latest nicht
-      # vorinstalliert ist.
-      - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
       - run: npm run bundle
-      # Vor dem Bauen: Selbsttest auf dem echten System (unsichtbares Fenster, Linux mit Xvfb)
+      # Vor dem Bauen: Selbsttest auf dem echten System (unsichtbares Fenster, Linux mit Xvfb).
+      # Läuft vor dem apt-get-Schritt: danach scheitert Chromium unter Xvfb mit "UnknownVizError".
       - if: runner.os == 'Linux'
         run: xvfb-run -a npx electron . --no-sandbox --selftest ./test-output
       - if: runner.os != 'Linux'
         run: npx electron . --selftest ./test-output
+      # .pacman braucht bsdtar (libarchive-tools), das auf ubuntu-latest nicht vorinstalliert ist.
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
       - run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
