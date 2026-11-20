@@ -7,7 +7,7 @@ Status: teilweise – Programm, Tests, CI und Website fertig; Release v1.0.0 NIC
 2. Branch, Commits, PR, Release, CI
 - Branch: claude/awesome-babbage-xno7q0 (Repo erqf1/gitline)
 - Commits: 6ede0ac, 22c9118, 2f6abd0, fc72492, 507d794, 1f3b36d (Code-Stand für das Release), danach nur noch diese Ergebnis-Datei
-- PR nach main: PR_LINK
+- PR nach main: https://github.com/erqf1/gitline/pull/1
 - Release-Tag v1.0.0: nicht gepusht. "git push origin v1.0.0" bricht jedes Mal ab ("send-pack: unexpected disconnect", 3 Versuche) – die Cloud darf nur den eigenen Branch pushen.
 - CI "Selbsttest" (.github/workflows/test.yml) auf Windows, Linux und macOS: alle 3 Jobs grün (Run 44735795032 auf fc72492). Spätere Commits ändern nur Website, README und Release-Notizen.
 - Lokal zusätzlich gebaut: Linux tar.gz mit electron-builder (afterPack-Prüfung ok); das gepackte Programm startet ohne Absturz.
