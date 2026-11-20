@@ -445,7 +445,14 @@ app.whenReady().then(() => {
   buildMenu();
   createWindow();
   setupAutoUpdate();
-  if (selfTest) require(path.join(__dirname, '..', 'tools', testArg === '--siteshots' ? 'siteshots.js' : 'selftest.js'))(win, selfTest);
+  if (selfTest) {
+    try {
+      require(path.join(__dirname, '..', 'tools', testArg === '--siteshots' ? 'siteshots.js' : 'selftest.js'))(win, selfTest);
+    } catch (e) {
+      console.log('Fehler beim Laden des Tests:', e && e.stack ? e.stack : e);
+      app.exit(1);
+    }
+  }
 });
 
 app.on('before-quit', () => {

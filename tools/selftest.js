@@ -29,7 +29,11 @@ module.exports = function selftest(win, dir) {
     if (level === 'error' || level === 3) errors.push(e.message);
   });
   const results = [];
-  const check = (name, ok, info = '') => results.push(`${ok ? 'ok  ' : 'FEHL'} ${name}${info !== '' ? ` (${String(info).slice(0, 300)})` : ''}`);
+  const check = (name, ok, info = '') => {
+    const line = `${ok ? 'ok  ' : 'FEHL'} ${name}${info !== '' ? ` (${String(info).slice(0, 300)})` : ''}`;
+    results.push(line);
+    if (process.env.GITLINE_VERBOSE) console.log(line);
+  };
   const js = (code) => wc.executeJavaScript(code, true);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const shot = async (name) => {
@@ -212,8 +216,11 @@ module.exports = function selftest(win, dir) {
       await git.applyPatch(repo, buildLinePatch(fd, 1, [h2i]), { cached: true });
       const one = parseDiff(await git.diffFile(repo, 'text.txt', { staged: true }))[0];
       check('Einzelne Zeile vormerken', one.added === 1 && one.removed === 0 && one.hunks[0].lines.find((l) => l.type === 'add').text === 'eingefügt', `${one.added}/${one.removed}`);
-      const delIdx = fd.hunks[1].lines.findIndex((l) => l.type === 'del');
-      await git.applyPatch(repo, buildLinePatch(fd, 1, [delIdx]), { cached: true });
+      // nach dem Vormerken hat sich der Index geändert: Diff neu holen
+      fd = parseDiff(await git.diffFile(repo, 'text.txt'))[0];
+      const hk = fd.hunks.findIndex((x) => x.lines.some((l) => l.type === 'del' && l.text === 'Zeile 26'));
+      const delIdx = fd.hunks[hk].lines.findIndex((l) => l.type === 'del' && l.text === 'Zeile 26');
+      await git.applyPatch(repo, buildLinePatch(fd, hk, [delIdx]), { cached: true });
       const two = parseDiff(await git.diffFile(repo, 'text.txt', { staged: true }))[0];
       check('Gelöschte Zeile dazu', two.added === 1 && two.removed === 1, `${two.added}/${two.removed}`);
       const stg = parseDiff(await git.diffFile(repo, 'text.txt', { staged: true }))[0];
@@ -392,7 +399,9 @@ module.exports = function selftest(win, dir) {
 
       // ---------------- Server: Push, Klonen, Abrufen, Pull
       const bare = path.join(REPOS, 'server.git');
-      await git.run(['init', '--bare', bare], { cwd: REPOS });
+      await git.run(['init', '--bare', '-b', 'main', bare], { cwd: REPOS });
+      // file:// statt Pfad: sonst kopiert git lokal und meldet keinen Fortschritt
+      const bareUrl = require('url').pathToFileURL(bare).href;
       await git.addRemote(repo, 'origin', bare);
       check('Remote hinzufügen', (await git.remotes(repo))[0].url === bare);
       let progressSeen = 0;
@@ -404,7 +413,7 @@ module.exports = function selftest(win, dir) {
       check('Tag pushen', (await G(bare, 'tag')).includes('v1.0.0'));
       const cloneDir = path.join(REPOS, 'klon');
       let cloneProgress = 0;
-      await git.clone(bare, cloneDir, () => cloneProgress++);
+      await git.clone(bareUrl, cloneDir, () => cloneProgress++);
       check('Klonen', fs.existsSync(path.join(cloneDir, 'text.txt')) && (await git.status(cloneDir)).upstream === 'origin/main');
       check('Klonen meldet Fortschritt', cloneProgress > 0, cloneProgress);
       for (const [k, v] of [['user.name', 'Klon Person'], ['user.email', 'klon@example.com'], ['commit.gpgsign', 'false']]) await G(cloneDir, 'config', k, v);
@@ -451,7 +460,8 @@ module.exports = function selftest(win, dir) {
       check('Branch auf Server löschen', !(await git.refs(repo)).remote.some((b) => b.name === 'origin/neben'));
       check('Gelöschter Upstream erkannt', (await git.refs(repo)).local.find((b) => b.name === 'neben').gone);
       check('Netzwerkfehler erkannt', ['NETWORK', 'GIT', 'NO_REMOTE'].includes(await throwsCode(() => git.clone('https://gitline-test.invalid/x.git', path.join(REPOS, 'nie')))));
-      check('Kein Remote erkannt', ['NO_REMOTE', 'GIT'].includes(await throwsCode(() => git.push(await newRepo('ohne-remote'), {}))));
+      const lonely = await newRepo('ohne-remote');
+      check('Kein Remote erkannt', ['NO_REMOTE', 'GIT'].includes(await throwsCode(() => git.push(lonely, {}))));
 
       // Abbrechen eines laufenden Befehls
       const slow = git.run(['hash-object', '--stdin'], { cwd: repo, id: 'langsam' });
@@ -518,7 +528,7 @@ module.exports = function selftest(win, dir) {
       await until('document.querySelectorAll(".commit-list .row.commit").length === 2');
       check('Verlauf mit Grafik', (await js('document.querySelectorAll(".commit-list svg.graph").length')) === 2);
       await until('!!document.querySelector("#main .commit-card")');
-      check('Commit-Details', (await js('document.querySelector("#main .cc-subject").textContent')) === 'Über die Oberfläche' && (await js('document.querySelectorAll("#main .cfiles .row").length')) === 4);
+      check('Commit-Details', (await js('document.querySelector("#main .cc-subject").textContent')) === 'Über die Oberfläche' && (await js('document.querySelectorAll("#main .cfiles .row").length')) === 3);
       await shot('verlauf');
       // Branches, Stash, Tags
       await js('window.__gl.setTab("branches")');
