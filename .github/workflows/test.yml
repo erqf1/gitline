@@ -1,0 +1,35 @@
+name: Selbsttest
+
+# Bei jedem Push und Pull Request: Selbsttest auf Windows, Linux und macOS (unsichtbares Fenster).
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run bundle
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a npx electron . --no-sandbox --selftest ./test-output
+      - if: runner.os != 'Linux'
+        run: npx electron . --selftest ./test-output
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-${{ matrix.os }}
+          path: |
+            test-output/*.png
+            test-output/ergebnis.txt
+          if-no-files-found: ignore

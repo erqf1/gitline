@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de" data-acryl="plum">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#07080c">
+<title>Gitline – Changelog</title>
+<link rel="icon" href="icon.png">
+<!-- Absichtlich ohne fremde Server: nur Systemschriften -->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #07080c; --surface: rgb(255 255 255 / .04); --line: rgb(255 255 255 / .1);
+    --text: #f1f3f8; --muted: #b3bbcb; --faint: #939cb0; --grid: rgb(255 255 255 / .085);
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; min-height: 100vh; position: relative; isolation: isolate; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+  .bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .bg::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 44px 44px; background-position: center top;
+    -webkit-mask-image: radial-gradient(ellipse 85% 60% at 50% 0%, #000 35%, transparent 80%);
+            mask-image: radial-gradient(ellipse 85% 60% at 50% 0%, #000 35%, transparent 80%);
+  }
+  .blob { position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%; filter: blur(80px); opacity: .2; }
+  .blob.a { background: #c026d3; top: -26vmax; left: -12vmax; }
+  .blob.b { background: #86198f; top: -22vmax; right: -16vmax; }
+  main { max-width: 760px; margin: 0 auto; padding: 22px 20px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-weight: 650; }
+  .back svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 3px solid #f0abfc; outline-offset: 3px; }
+  h1 { margin: 44px 0 6px; font-size: clamp(2.2rem, 7vw, 3.2rem); letter-spacing: -.03em; line-height: 1.05; }
+  h1 span { background: linear-gradient(100deg, #f0abfc, #c026d3 45%, #86198f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { margin: 0 0 34px; color: var(--muted); }
+  .update { position: relative; padding: 0 0 34px 28px; border-left: 2px solid var(--line); margin-left: 8px; }
+  .update::before { content: ""; position: absolute; left: -8px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: #c026d3; box-shadow: 0 0 0 4px rgb(192 38 211 / .2); }
+  .update.new::before { background: #f0abfc; box-shadow: 0 0 0 4px rgb(240 171 252 / .25), 0 0 18px #f0abfc; }
+  .date { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 4px; font-size: .82rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .badge { padding: 2px 9px; border-radius: 999px; background: rgb(192 38 211 / .18); color: #f0abfc; font-size: .72rem; letter-spacing: .06em; }
+  h2 { margin: 0 0 14px; font-size: 1.35rem; letter-spacing: -.01em; }
+  .card { padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); margin-bottom: 12px; }
+  .card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .95rem; }
+  .card h3 i { width: 10px; height: 10px; border-radius: 3px; background: var(--c, #6f9bff); }
+  ul { margin: 0; padding-left: 20px; color: var(--muted); }
+  li { margin: 4px 0; }
+  li b { color: var(--text); font-weight: 650; }
+  footer { margin-top: 20px; color: var(--faint); font-size: .88rem; text-align: center; }
+</style>
+<link rel="stylesheet" href="/app-icons/acryl.css">
+<link rel="stylesheet" href="/app-icons/mobile.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="blob a"></div><div class="blob b"></div></div>
+<main>
+  <header>
+    <a class="back" href="/git/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Gitline</a>
+  </header>
+  <h1><span>Gitline</span> – Changelog</h1>
+  <p class="lead">Was es Neues bei Gitline gibt – das Neueste steht oben.</p>
+
+  <section class="update new">
+    <p class="date">20. November 2026 <span class="badge">Neu</span></p>
+    <h2>Version 1.0.0 – Das erste Release</h2>
+    <div class="card" style="--c:#c026d3">
+      <h3><i></i>Git ohne Terminal</h3>
+      <ul>
+        <li><b>Repositorys:</b> Ordner öffnen, zuletzt geöffnete, Klonen per URL mit Fortschritt, neues Repository mit README und .gitignore-Vorlage.</li>
+        <li><b>Änderungen:</b> Nicht vorgemerkt und vorgemerkt, ganze Dateien, einzelne Abschnitte oder einzelne Zeilen vormerken, Änderungen verwerfen (neue Dateien in den Papierkorb).</li>
+        <li><b>Diff:</b> Nebeneinander oder untereinander, mit Syntaxfarben; Bilder als Vorher/Nachher.</li>
+        <li><b>Commit:</b> Zusammenfassung und Beschreibung, letzten Commit ändern (Amend), Co-Autoren.</li>
+        <li><b>Verlauf:</b> Branch-Grafik, Commit-Details, Datei-Verlauf auch über Umbenennungen, Suche nach Nachricht, Autor und Hash; Cherry-Pick, Revert und Zurücksetzen.</li>
+      </ul>
+    </div>
+    <div class="card" style="--c:#f0abfc">
+      <h3><i></i>Branches und Server</h3>
+      <ul>
+        <li><b>Branches:</b> anlegen, wechseln (Änderungen auf Wunsch stashen), umbenennen, löschen, zusammenführen.</li>
+        <li><b>Konflikte:</b> farbig zeigen, „meine“ oder „deren“ Version wählen oder in Textline öffnen, dann abschließen oder abbrechen.</li>
+        <li><b>Abrufen, Pull und Push</b> mit Fortschritt; Branches veröffentlichen, auf dem Server löschen.</li>
+        <li><b>Anmeldung</b> über den Git Credential Manager des Systems. Gitline speichert keine Passwörter oder Tokens.</li>
+        <li><b>Stash, Tags und .gitignore-Helfer</b> mit Vorlagen.</li>
+        <li><b>Englisch und Deutsch,</b> hell und dunkel, eigene Akzentfarbe und der optionale Stil Acryl. Unter Windows „Mit Gitline öffnen“ im Kontextmenü von Ordnern.</li>
+      </ul>
+    </div>
+  </section>
+
+
+  <footer>mert.win</footer>
+</main>
+</body>
+</html>
