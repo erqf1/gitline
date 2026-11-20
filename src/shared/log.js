@@ -6,16 +6,27 @@ const LOG_FORMAT = '%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%cn%x1f%ct%x1f%D%x1f%s';
 
 function parseRefs(d) {
   const out = [];
+  // Mit --decorate=full kommen volle Namen (refs/heads/..., refs/remotes/..., tag: refs/tags/...);
+  // kurze Namen werden auch verstanden (dann gilt "a/b" als Server-Branch, wie früher)
+  const one = (r, current) => {
+    if (r.startsWith('refs/heads/')) out.push({ type: 'branch', name: r.slice(11), current });
+    else if (r.startsWith('refs/remotes/')) out.push({ type: 'remote', name: r.slice(13) });
+    else if (r.startsWith('refs/tags/')) out.push({ type: 'tag', name: r.slice(10) });
+    else if (r.startsWith('refs/')) return;
+    else if (r.includes('/') && !current) out.push({ type: 'remote', name: r });
+    else out.push({ type: 'branch', name: r, current });
+  };
   for (let r of String(d || '').split(', ')) {
     r = r.trim();
     if (!r) continue;
     if (r.startsWith('HEAD -> ')) {
       out.push({ type: 'head', name: 'HEAD' });
-      out.push({ type: 'branch', name: r.slice(8), current: true });
+      one(r.slice(8), true);
     } else if (r === 'HEAD') out.push({ type: 'head', name: 'HEAD', detached: true });
-    else if (r.startsWith('tag: ')) out.push({ type: 'tag', name: r.slice(5) });
-    else if (r.includes('/') && !r.startsWith('refs/')) out.push({ type: 'remote', name: r });
-    else out.push({ type: 'branch', name: r });
+    else if (r.startsWith('tag: ')) {
+      const n = r.slice(5);
+      out.push({ type: 'tag', name: n.startsWith('refs/tags/') ? n.slice(10) : n });
+    } else one(r, false);
   }
   // origin/HEAD braucht niemand
   return out.filter((x) => !(x.type === 'remote' && /\/HEAD$/.test(x.name)));

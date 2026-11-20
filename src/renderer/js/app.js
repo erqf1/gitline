@@ -35,7 +35,7 @@ function withDefaults(s) {
   out.pullMode ||= 'merge';
   out.autoFetch ??= true;
   out.allBranches ??= true;
-  out.sideWidth ||= 340;
+  out.sideWidth ||= 360;
   out.recent = Array.isArray(out.recent) ? out.recent.filter((r) => r && r.path).slice(0, 15) : [];
   return out;
 }
@@ -138,6 +138,8 @@ export async function refresh() {
       S.stashes = st2;
       const head = `${st.oid}|${st.branch}|${refs.local.length}|${refs.remote.length}|${refs.tags.length}`;
       if (head !== lastHead || S.tab === 'history') {
+        // Neuer Commit oder anderer Branch: den neuesten Commit zeigen
+        if (head !== lastHead && lastHead !== null) history.selectCommit(null);
         lastHead = head;
         await history.loadHistory();
       }

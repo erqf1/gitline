@@ -108,7 +108,7 @@ module.exports = {
   // Änderungen
   conflicts: ['Conflicts', 'Konflikte'],
   unstagedTitle: ['Changes', 'Änderungen'],
-  stagedTitle: ['Staged for commit', 'Für den Commit vorgemerkt'],
+  stagedTitle: ['Staged', 'Vorgemerkt'],
   stageAll: ['Stage all', 'Alle vormerken'],
   unstageAll: ['Unstage all', 'Alle zurücknehmen'],
   stage: ['Stage', 'Vormerken'],

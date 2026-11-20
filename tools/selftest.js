@@ -96,6 +96,8 @@ module.exports = function selftest(win, dir) {
       check('Log: zwei Commits', lg.length === 2 && lg[0].parents.length === 2 && lg[1].parents.length === 0);
       check('Log: Refs', lg[0].refs.map((r) => `${r.type}:${r.name}`).join(',') === 'head:HEAD,branch:main,remote:origin/main,tag:v1.0', lg[0].refs.map((r) => r.name).join(','));
       check('Log: losgelöster HEAD', parseRefs('HEAD')[0].detached === true);
+      const full = parseRefs('HEAD -> refs/heads/main, refs/heads/fix/units, refs/remotes/origin/main, refs/remotes/origin/HEAD, tag: refs/tags/v2');
+      check('Log: volle Ref-Namen', full.map((r) => `${r.type}:${r.name}`).join(',') === 'head:HEAD,branch:main,branch:fix/units,remote:origin/main,tag:v2', full.map((r) => `${r.type}:${r.name}`).join(','));
       const body = parseLog(`${['d'.repeat(40), '', 'X', 'x@x', '1', 'X', '1', '', 'Titel', 'Titel\n\nText Zeile\n\nCo-authored-by: Eva Muster <eva@x.de>\n'].join('\x1f')}\0`, true)[0];
       check('Log: Text und Co-Autor', body.body === 'Text Zeile' && body.coAuthors.length === 1 && body.coAuthors[0].email === 'eva@x.de', JSON.stringify(body.body));
 
@@ -375,6 +377,7 @@ module.exports = function selftest(win, dir) {
       check('Suche ohne Treffer', (await git.search(repo, 'gibt-es-nicht-xyz')).length === 0);
       const all = await git.log(repo, { all: true });
       const gg = layout(all);
+      check('Lokale Branches im Verlauf erkannt', (await git.log(repo, { all: true })).some((c) => c.refs.some((r) => r.type === 'branch' && r.name === 'gegen')) && !(await git.log(repo, { all: true })).some((c) => c.refs.some((r) => r.type === 'remote')));
       check('Verlauf mit Grafik', all.length >= 10 && gg.width >= 2 && gg.rows.length === all.length, `${all.length} Commits, ${gg.width} Spuren`);
       check('Verlauf in Seiten', (await git.log(repo, { max: 3 })).length === 3 && (await git.log(repo, { max: 3, skip: 3 }))[0].hash === all.filter((c) => true)[3].hash || true);
       // Cherry-Pick und Revert
@@ -528,7 +531,7 @@ module.exports = function selftest(win, dir) {
       await until('document.querySelectorAll(".commit-list .row.commit").length === 2');
       check('Verlauf mit Grafik', (await js('document.querySelectorAll(".commit-list svg.graph").length')) === 2);
       await until('!!document.querySelector("#main .commit-card")');
-      check('Commit-Details', (await js('document.querySelector("#main .cc-subject").textContent')) === 'Über die Oberfläche' && (await js('document.querySelectorAll("#main .cfiles .row").length')) === 3);
+      check('Commit-Details', (await js('document.querySelector("#main .cc-subject").textContent')) === 'Über die Oberfläche' && (await js('document.querySelectorAll("#main .cfiles .row").length')) === 3, await js('document.querySelector("#main .cc-subject").textContent + " / " + document.querySelectorAll("#main .cfiles .row").length'));
       await shot('verlauf');
       // Branches, Stash, Tags
       await js('window.__gl.setTab("branches")');
@@ -554,7 +557,7 @@ module.exports = function selftest(win, dir) {
       await shot('stash');
       await js('window.__gl.setTab("tags")');
       await until('window.__gl.idle()');
-      await js('window.__gl.tags.newTagDialog()');
+      await js('void window.__gl.tags.newTagDialog()');
       await until('!!document.querySelector(".dialog")');
       await js('document.querySelector(".dialog input.input").value = "v0.1"; document.querySelector(".dialog .btn.primary").click()');
       await until('window.__gl.S.refs.tags.length === 1 && window.__gl.idle()');
@@ -590,7 +593,7 @@ module.exports = function selftest(win, dir) {
       for (const lang of ['en', 'de']) {
         await js(`window.__gl.set({ language: "${lang}" }); window.__gl.emit("language")`);
         await wait(300);
-        check(`Sprache ${lang}`, (await js('document.querySelector("#tabs .tab span").textContent')) === (lang === 'de' ? 'Änderungen' : 'Changes'));
+        check(`Sprache ${lang}`, (await js('document.querySelector("#tabs .tab span:not(.ico):not(.count)").textContent')) === (lang === 'de' ? 'Änderungen' : 'Changes'));
       }
       await js('window.__gl.set({ look: "acryl" })');
       await shot('acryl');

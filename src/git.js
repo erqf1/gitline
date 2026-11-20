@@ -378,7 +378,7 @@ async function lastMessage(repo) {
 
 // ---------------------------------------------------------------- Verlauf
 async function log(repo, { all = false, ref = null, skip = 0, max = 300, file = null, grep = null, author = null } = {}) {
-  const args = ['log', `--format=${LOG_FORMAT}`, '-z', `--max-count=${max}`, `--skip=${skip}`];
+  const args = ['log', '--decorate=full', `--format=${LOG_FORMAT}`, '-z', `--max-count=${max}`, `--skip=${skip}`];
   if (file) args.push('--follow');
   else args.push('--topo-order');
   if (grep) args.push('-i', '-F', `--grep=${grep}`);
@@ -405,7 +405,7 @@ async function search(repo, q, { all = true, max = 300 } = {}) {
   for (const c of [...byMsg, ...byAuthor]) seen.set(c.hash, c);
   if (/^[0-9a-f]{4,40}$/i.test(text)) {
     try {
-      const r = await run(['log', '-1', `--format=${LOG_FORMAT}`, '-z', text], { cwd: repo });
+      const r = await run(['log', '-1', '--decorate=full', `--format=${LOG_FORMAT}`, '-z', text], { cwd: repo });
       for (const c of parseLog(r.out)) seen.set(c.hash, c);
     } catch {
       // kein Hash
@@ -415,7 +415,7 @@ async function search(repo, q, { all = true, max = 300 } = {}) {
 }
 
 async function commitInfo(repo, hash) {
-  const r = await run(['show', '-s', `--format=${LOG_FORMAT}%x1f%B`, '-z', hash], { cwd: repo });
+  const r = await run(['show', '-s', '--decorate=full', `--format=${LOG_FORMAT}%x1f%B`, '-z', hash], { cwd: repo });
   const [c] = parseLog(r.out, true);
   const parent = c.parents[0] || null;
   const args = parent ? ['diff', '--name-status', '-z', '-M', parent, hash] : ['diff-tree', '--root', '-r', '--name-status', '-z', '-M', '--no-commit-id', hash];

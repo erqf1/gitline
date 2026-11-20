@@ -162,7 +162,16 @@ function imageDiff(promise) {
     const pane = (label, img, cls) => {
       const meta = h('div', { class: 'img-meta' });
       const el = h('div', { class: `img-pane ${cls}` }, h('div', { class: 'img-label', text: label }),
-        h('div', { class: 'img-frame' }, img ? h('img', { src: img.url, alt: '', onload: (e) => { meta.textContent = `${e.target.naturalWidth} × ${e.target.naturalHeight} · ${humanSize(img.size)}`; } }) : h('div', { class: 'img-none', text: t('noImage') })),
+        h('div', { class: 'img-frame' }, img ? h('img', { src: img.url, alt: '', onload: (e) => {
+          const im = e.target;
+          meta.textContent = `${im.naturalWidth} × ${im.naturalHeight} · ${humanSize(img.size)}`;
+          // Sehr kleine Bilder (Symbole) vergrößert und scharf zeigen
+          if (im.naturalWidth && im.naturalWidth < 96 && im.naturalHeight < 96) {
+            const f = Math.max(2, Math.floor(128 / Math.max(im.naturalWidth, im.naturalHeight)));
+            im.style.width = `${im.naturalWidth * f}px`;
+            im.style.imageRendering = 'pixelated';
+          }
+        } }) : h('div', { class: 'img-none', text: t('noImage') })),
         meta);
       return el;
     };

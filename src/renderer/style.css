@@ -72,7 +72,7 @@ code { font-family: var(--mono); font-size: 11.5px; }
 .side-empty p { margin: 0; max-width: 240px; }
 
 .tabs { display: grid; grid-template-columns: repeat(5, 1fr); flex: none; border-bottom: 1px solid var(--line); }
-.tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 2px 7px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; cursor: default; min-width: 0; }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 1px 7px; border: 0; background: transparent; color: var(--muted); font-size: 10.5px; letter-spacing: -.01em; font-weight: 600; cursor: default; min-width: 0; }
 .tab span:not(.count) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tab:hover { color: var(--text); background: var(--hover); }
 .tab.on { color: var(--accent); }
@@ -82,9 +82,9 @@ code { font-family: var(--mono); font-size: 11.5px; }
 /* Abschnitte und Zeilen */
 .sect { margin-top: 6px; }
 .sect-head { display: flex; align-items: center; gap: 7px; padding: 6px 12px 4px; color: var(--muted); }
-.sect-title { font-size: 11.5px; font-weight: 650; }
+.sect-title { font-size: 11.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .sect-head .count { font-size: 11px; padding: 0 6px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-.link-btn { border: 0; background: transparent; padding: 2px 4px; border-radius: 5px; color: var(--accent); font-size: 12px; cursor: default; }
+.link-btn { white-space: nowrap; flex: none; border: 0; background: transparent; padding: 2px 4px; border-radius: 5px; color: var(--accent); font-size: 12px; cursor: default; }
 .link-btn:hover { background: var(--accent-soft); }
 .link { color: var(--accent); cursor: pointer; text-decoration: none; }
 .link:hover { text-decoration: underline; }
@@ -248,7 +248,9 @@ table.conflict-text tr.marker.theirs td { background: color-mix(in srgb, var(--s
 .commit-card, .branch-card { flex: none; padding: 14px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .branch-card { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 14px; }
 .details > .branch-card { margin: 0; border-radius: 0; border-width: 0 0 1px; }
-.cc-top, .bc-top { display: flex; align-items: center; gap: 11px; }
+.cc-top, .bc-top { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+.bc-top > div:nth-child(2) { min-width: 0; flex: 1 1 200px; }
+.bc-top .main-actions { margin-left: auto; }
 .cc-who { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
 .cc-who small { color: var(--muted); font-size: 11.5px; }
 .cc-subject { margin: 12px 0 0; font-size: 17px; font-weight: 650; line-height: 1.35; user-select: text; }
