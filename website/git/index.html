@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-acryl="plum">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gitline – Git without the terminal</title>
+<meta name="description" content="Gitline is a simple, good-looking app for Git: see your changes, stage single sections, commit, branch, pull and push without the terminal. Free for Windows, Linux and macOS.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="icon.png">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<!-- Aufbau wie die Webline-Seite; nur Systemschriften, keine fremden Server außer GitHub für die Downloads -->
+<style>
+  :root {
+    --a1:#c026d3; --a2:#86198f; --a3:#f0abfc; --grad:linear-gradient(135deg,var(--a1),var(--a2));
+    --radius:20px; --mono:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg:#07070d; --bg2:#0c0c15; --card:rgba(18,18,30,.72); --card-solid:#11111c; --card2:#1a1a29; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.15);
+    --text:#eef0f7; --muted:#9a9cb3; --label:#f0abfc; --shadow:0 40px 100px -30px rgba(0,0,0,.85);
+    --orb1:rgba(192,38,211,.22); --orb2:rgba(134,25,143,.26); --orb3:rgba(240,171,252,.12); --grid:rgba(255,255,255,.085);
+  }
+  [data-theme="light"] {
+    --bg:#f7f7fb; --bg2:#ffffff; --card:rgba(255,255,255,.8); --card-solid:#ffffff; --card2:#efeff7; --line:rgba(30,30,70,.09); --line2:rgba(30,30,70,.17);
+    --text:#14142a; --muted:#5d5f78; --label:#a21caf; --shadow:0 40px 90px -35px rgba(90,20,100,.3);
+    --orb1:rgba(192,38,211,.16); --orb2:rgba(134,25,143,.16); --orb3:rgba(240,171,252,.16); --grid:rgba(30,30,70,.10);
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; scroll-padding-top:80px; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased; overflow-x:hidden; transition:background .3s,color .3s; }
+  a { color:inherit; text-decoration:none; }
+  img { max-width:100%; display:block; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  svg.i { width:1em; height:1em; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  .label { display:inline-flex; align-items:center; gap:8px; font:600 12.5px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--label); margin:0 0 18px; }
+  .label::before { content:""; width:18px; height:2px; background:var(--grad); border-radius:2px; }
+  .grad-text { background:linear-gradient(100deg,var(--a3),var(--a1) 45%,var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  .aurora { position:fixed; inset:0; z-index:-2; pointer-events:none; overflow:hidden; }
+  .aurora i { position:absolute; width:62vw; height:62vw; border-radius:50%; filter:blur(90px); opacity:.9; animation:drift 26s ease-in-out infinite alternate; }
+  .aurora i:nth-child(1) { background:var(--orb1); left:-18vw; top:-26vw; }
+  .aurora i:nth-child(2) { background:var(--orb2); right:-20vw; top:-12vw; animation-duration:32s; animation-delay:-8s; }
+  .aurora i:nth-child(3) { background:var(--orb3); left:25vw; top:40vh; width:40vw; height:40vw; animation-duration:38s; }
+  @keyframes drift { 0% { transform:translate(0,0) scale(1); } 50% { transform:translate(6vw,4vh) scale(1.08); } 100% { transform:translate(-4vw,8vh) scale(.95); } }
+  .gridbg { position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px); background-size:56px 56px;
+    -webkit-mask:radial-gradient(85% 75% at 50% 30%,#000 35%,transparent 85%); mask:radial-gradient(85% 75% at 50% 30%,#000 35%,transparent 85%); }
+
+  nav { position:sticky; top:0; z-index:50; backdrop-filter:blur(18px) saturate(1.5); -webkit-backdrop-filter:blur(18px) saturate(1.5); background:color-mix(in srgb,var(--bg) 70%,transparent); border-bottom:1px solid var(--line); }
+  nav .wrap { display:flex; align-items:center; gap:22px; height:68px; }
+  .brand { display:flex; align-items:center; gap:11px; font-weight:780; font-size:19px; letter-spacing:-.01em; }
+  .brand img { width:34px; height:34px; border-radius:9px; }
+  .links { margin-left:auto; display:flex; align-items:center; gap:4px; }
+  .links a.l { padding:8px 13px; border-radius:10px; color:var(--muted); font-size:15px; font-weight:500; transition:.15s; }
+  .links a.l:hover { color:var(--text); background:var(--card2); }
+  .ib, .sel { height:38px; border-radius:11px; border:1px solid var(--line2); background:var(--card-solid); color:var(--text); display:inline-grid; place-items:center; transition:.15s; }
+  .ib { width:38px; font-size:18px; } .ib:hover, .sel:hover { border-color:var(--a1); }
+  .sel { padding:0 30px 0 12px; font-size:14px; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239a9cb3' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+  .theme-ic .sun { display:none; } [data-theme="light"] .theme-ic .sun { display:block; } [data-theme="light"] .theme-ic .moon { display:none; }
+
+  .hero { position:relative; padding:78px 0 40px; isolation:isolate; }
+  .hero .cols { display:grid; grid-template-columns:1fr 1.1fr; gap:54px; align-items:center; }
+  .badge { display:inline-flex; align-items:center; gap:9px; padding:6px 14px 6px 7px; border-radius:999px; border:1px solid var(--line2); background:var(--card); backdrop-filter:blur(8px); font-size:14px; color:var(--muted); }
+  .badge b { background:var(--grad); color:#fff; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:650; }
+  .badge a { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+  h1 { font-size:clamp(42px,6vw,78px); line-height:.98; letter-spacing:-.045em; margin:24px 0 22px; font-weight:850; }
+  .lead { max-width:560px; margin:0 0 34px; color:var(--muted); font-size:clamp(17px,1.7vw,20px); }
+
+  .stage { position:relative; }
+  .window { border-radius:18px; padding:8px; background:linear-gradient(160deg,var(--line2),transparent 40%),var(--card-solid); border:1px solid var(--line2);
+    box-shadow:var(--shadow),0 0 140px -40px var(--a2); transform:perspective(1400px) rotateY(-9deg) rotateX(3deg); transition:transform .6s; }
+  .window:hover { transform:perspective(1400px) rotateY(-3deg) rotateX(1deg); }
+  .window img { border-radius:11px; width:100%; }
+  .float { position:absolute; display:flex; align-items:center; gap:9px; padding:10px 14px; border-radius:14px; background:var(--card-solid); border:1px solid var(--line2);
+    box-shadow:var(--shadow); font-weight:650; font-size:14px; animation:bob 5s ease-in-out infinite; white-space:nowrap; }
+  .float .dot { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; color:#fff; background:var(--grad); font:700 11px var(--mono); }
+  .float small { display:block; color:var(--muted); font-weight:500; font-size:12px; }
+  .f1 { left:-26px; top:12%; } .f2 { right:-18px; top:42%; animation-delay:-1.6s; } .f3 { left:14%; bottom:-22px; animation-delay:-3.2s; }
+  @keyframes bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+
+  .dlui { display:flex; gap:12px; flex-wrap:wrap; position:relative; }
+  .dd { position:relative; }
+  .btn { display:inline-flex; align-items:center; gap:11px; height:56px; padding:0 24px; border-radius:16px; font-weight:680; font-size:17px; border:1px solid var(--line2); background:var(--card-solid); transition:transform .15s,box-shadow .2s,border-color .15s; }
+  .btn:hover { transform:translateY(-2px); border-color:var(--a1); }
+  .btn.pri { position:relative; background:var(--grad); border-color:transparent; color:#fff; box-shadow:0 14px 38px -10px var(--a1); overflow:hidden; }
+  .btn.pri::after { content:""; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent); transform:skewX(-20deg); animation:shine 4.5s infinite; }
+  @keyframes shine { 0%,70% { left:-60%; } 100% { left:130%; } }
+  .btn .i { font-size:19px; } .btn .chev { font-size:15px; opacity:.85; transition:transform .2s; }
+  .btn[aria-expanded="true"] .chev { transform:rotate(180deg); }
+  .menu { position:absolute; top:calc(100% + 10px); left:0; z-index:40; min-width:300px; text-align:left; background:var(--card-solid); border:1px solid var(--line2); border-radius:18px; box-shadow:var(--shadow); padding:8px; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:.16s; }
+  .menu.open { opacity:1; transform:none; pointer-events:auto; }
+  .menu.wide { width:min(440px,92vw); }
+  .tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px; margin-bottom:6px; background:var(--bg2); border-radius:12px; border:1px solid var(--line); }
+  .tabs button { border:0; background:transparent; padding:9px 6px; border-radius:9px; font-weight:600; font-size:15px; color:var(--muted); transition:.15s; }
+  .tabs button:hover { color:var(--text); }
+  .tabs button.on { background:var(--card2); color:var(--text); box-shadow:0 0 0 1px var(--line2) inset; }
+  .item { display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:11px; transition:background .12s; }
+  .item:hover { background:var(--card2); }
+  .item .t { flex:1; min-width:0; }
+  .item .t b { display:block; font-size:16px; font-weight:650; line-height:1.3; }
+  .item .t small { display:block; color:var(--muted); font-size:13.5px; line-height:1.4; }
+  .item .sz { font:13px var(--mono); color:var(--muted); white-space:nowrap; }
+  .vline { margin-top:20px; color:var(--muted); font-size:15px; }
+  .vline a { color:var(--label); text-decoration:underline; text-underline-offset:3px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .chip { font:13px var(--mono); padding:6px 13px; border-radius:999px; border:1px solid var(--line2); background:var(--card); color:var(--text); transition:.15s; }
+  .chip:hover { border-color:var(--a1); }
+
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin:90px 0 0; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line2); background:var(--line2); }
+  .stat { padding:26px 24px; background:var(--card-solid); }
+  .stat b { display:block; font-size:clamp(26px,3.2vw,38px); font-weight:820; letter-spacing:-.03em; line-height:1.1; }
+  .stat span { color:var(--muted); font-size:14.5px; }
+
+  section { padding:110px 0; position:relative; }
+  h2 { font-size:clamp(34px,4.9vw,58px); letter-spacing:-.035em; line-height:1.04; margin:0 0 16px; font-weight:840; max-width:800px; }
+  .sub { color:var(--muted); font-size:19px; max-width:640px; margin:0 0 54px; }
+  .center { text-align:center; } .center h2, .center .sub { margin-left:auto; margin-right:auto; }
+
+  .gcard { position:relative; border-radius:var(--radius); background:var(--card); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:30px; overflow:hidden; transition:transform .25s; }
+  .gcard::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+    background:linear-gradient(150deg,var(--line2),transparent 40%,transparent 60%,var(--line2));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+  .gcard:hover { transform:translateY(-3px); }
+  .gcard:hover::before { background:linear-gradient(150deg,var(--a1),transparent 45%,transparent 55%,var(--a2)); }
+  .gcard h3 { margin:0 0 6px; font-size:21px; letter-spacing:-.01em; }
+  .gcard p { margin:0; color:var(--muted); font-size:15.5px; }
+  .ic { width:46px; height:46px; border-radius:13px; display:grid; place-items:center; margin-bottom:18px; font-size:22px; color:#fff; background:var(--grad); box-shadow:0 10px 26px -10px var(--a1); }
+  .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .steps .n { font:800 14px var(--mono); color:var(--label); letter-spacing:.1em; }
+  .steps h3 { margin:10px 0 8px; font-size:23px; }
+
+  .bento { display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
+  .c2 { grid-column:span 2; } .c3 { grid-column:span 3; } .c4 { grid-column:span 4; } .c6 { grid-column:span 6; }
+  .demo { margin-top:22px; }
+  .pills { display:flex; flex-wrap:wrap; gap:8px; }
+  .pill { padding:6px 13px; border-radius:999px; border:1px solid var(--line2); font-size:14px; background:var(--bg2); }
+  .pill.on { background:var(--grad); color:#fff; border-color:transparent; }
+  .kbd { display:inline-grid; place-items:center; min-width:38px; height:38px; padding:0 10px; border-radius:10px; border:1px solid var(--line2); border-bottom-width:4px; background:var(--bg2); font:700 14px var(--mono); }
+  .kbds { display:flex; gap:7px; flex-wrap:wrap; }
+  .tiles { display:flex; gap:10px; flex-wrap:wrap; }
+  .tile { width:54px; height:54px; border-radius:14px; display:grid; place-items:center; color:#fff; font:700 14px var(--mono); }
+  .rows { display:grid; gap:8px; }
+  .rows div { display:flex; justify-content:space-between; gap:10px; padding:10px 14px; border-radius:11px; background:var(--bg2); border:1px solid var(--line); font-size:14.5px; }
+  .rows span { color:var(--muted); } .rows b { font-family:var(--mono); font-weight:600; }
+  .bar { height:6px; border-radius:4px; background:var(--card2); overflow:hidden; margin-top:6px; }
+  .bar i { display:block; height:100%; width:62%; background:var(--grad); animation:prog 4s ease-in-out infinite; }
+  @keyframes prog { 0% { width:0; } 80%,100% { width:100%; } }
+
+  .gallery { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:30px; }
+  .gallery button { display:inline-flex; align-items:center; gap:9px; padding:10px 17px; border-radius:999px; border:1px solid var(--line2); background:var(--card-solid); font-size:14.5px; font-weight:600; transition:.15s; }
+  .gallery button:hover { border-color:var(--a1); }
+  .gallery button.on { background:var(--grad); color:#fff; border-color:transparent; }
+  .frame { position:relative; margin:0 auto; max-width:1100px; border-radius:20px; background:var(--card-solid); border:1px solid var(--line2); box-shadow:var(--shadow),0 0 120px -40px var(--a2); overflow:hidden; }
+  .frame .tb { display:flex; gap:7px; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--bg2); }
+  .frame .tb i { width:11px; height:11px; border-radius:50%; }
+  .frame .tb i:nth-child(1) { background:#ff5f57 } .frame .tb i:nth-child(2) { background:#febc2e } .frame .tb i:nth-child(3) { background:#28c840 }
+  .frame img { width:100%; height:auto; transition:opacity .25s; }
+  .caption { text-align:center; color:var(--muted); margin-top:18px; font-size:15px; }
+
+  .dlpanel { max-width:660px; margin:0 auto; padding:12px; border-radius:24px; background:var(--card-solid); border:1px solid var(--line2); box-shadow:var(--shadow); }
+  .dlpanel .item { padding:16px 18px; }
+  .dlpanel .item .dlic { width:44px; height:44px; border-radius:13px; display:grid; place-items:center; background:var(--card2); border:1px solid var(--line); font-size:20px; }
+  .cmd { display:flex; align-items:center; gap:10px; margin:0 18px 12px; padding:9px 12px; border-radius:10px; background:var(--bg2); border:1px solid var(--line); font:13px var(--mono); }
+  .cmd code { flex:1; overflow-x:auto; white-space:nowrap; }
+  .cmd button { border:0; background:transparent; color:var(--muted); padding:2px 6px; border-radius:6px; }
+  .cmd button:hover { color:var(--text); background:var(--card2); }
+  .note { text-align:center; color:var(--muted); font-size:15px; margin:26px auto 0; max-width:660px; }
+
+  details { background:var(--card); backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:16px; padding:20px 24px; margin-bottom:12px; transition:border-color .2s; }
+  details[open] { border-color:var(--line2); }
+  summary { cursor:pointer; font-weight:650; font-size:17px; list-style:none; display:flex; justify-content:space-between; gap:12px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:"+"; font:400 24px/1 var(--mono); color:var(--label); transition:transform .2s; }
+  details[open] summary::after { transform:rotate(45deg); }
+  details p { color:var(--muted); margin:12px 0 0; }
+
+  .cta { text-align:center; padding:70px 30px; border-radius:30px; position:relative; overflow:hidden; border:1px solid var(--line2);
+    background:radial-gradient(600px 300px at 20% 0%,var(--orb1),transparent 70%),radial-gradient(600px 300px at 80% 100%,var(--orb2),transparent 70%),var(--card-solid); }
+  .cta h2 { margin:0 auto 14px; }
+  .cta .dlui { justify-content:center; }
+
+  footer { border-top:1px solid var(--line); padding:40px 0 64px; color:var(--muted); font-size:15px; }
+  footer .wrap { display:flex; gap:20px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+  footer a:hover { color:var(--text); }
+
+  .reveal { opacity:0; transform:translateY(22px); transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity:1; transform:none; }
+  @media (prefers-reduced-motion:reduce) {
+    .reveal { opacity:1; transform:none; transition:none; } .aurora i, .float, .bar i, .btn.pri::after { animation:none; }
+    html { scroll-behavior:auto; }
+  }
+  @media (max-width:960px) {
+    .hero .cols { grid-template-columns:1fr; gap:60px; }
+    .window { transform:none; } .f1 { left:6px; } .f2 { right:6px; }
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .steps { grid-template-columns:1fr; }
+    .bento { grid-template-columns:repeat(2,1fr); } .c2,.c3,.c4,.c6 { grid-column:span 2; }
+    .links a.l { display:none; }
+  }
+  @media (max-width:520px) { .wrap { padding:0 16px; } .btn { width:100%; justify-content:center; } .dd { width:100%; } .menu { left:0; right:0; min-width:0; width:100% !important; } section { padding:80px 0; } .float { display:none; } }
+  .btn.pri, .badge b, .ic, .pill.on, .gallery button.on, .float .dot, .tile { color:#fff; }
+  .btn.pri { box-shadow:0 14px 38px -12px var(--a2); }
+</style>
+<link rel="stylesheet" href="/app-icons/acryl.css">
+<link rel="stylesheet" href="/app-icons/mobile.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="icon.png" alt="">Gitline</a>
+    <div class="links">
+      <a class="l" href="#how" data-i18n="nav_how">How it works</a>
+      <a class="l" href="#features" data-i18n="nav_features">Features</a>
+      <a class="l" href="#look" data-i18n="nav_look">Screenshots</a>
+      <a class="l" href="#download" data-i18n="nav_download">Download</a>
+      <a class="l" href="https://github.com/erqf1/gitline">GitHub</a>
+      <select class="sel" id="lang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+      </select>
+      <button class="ib theme-ic" id="theme-btn" aria-label="Toggle dark / light mode" title="Dark / Light">
+        <svg class="i moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        <svg class="i sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="gridbg"></div>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <span class="badge reveal"><b data-i18n="badge_new">Free</b><span id="news" data-i18n="badge_t">Windows · Linux · macOS</span></span>
+        <h1 class="reveal"><span data-i18n="h1a">Git, without</span><br><span class="grad-text" data-i18n="h1b">the terminal.</span></h1>
+        <p class="lead reveal" data-i18n="lead">Gitline shows what changed in your project and lets you commit, branch, pull and push with a click. Simple enough for your first repository, fast enough for every day.</p>
+        <div class="dlui reveal">
+          <div class="dd">
+            <a class="btn pri" id="main-btn" href="#download" aria-haspopup="true" aria-expanded="false">
+              <svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>
+              <span id="main-label">Download</span>
+              <svg class="i chev" viewBox="0 0 24 24" id="main-chev"><path d="M6 9l6 6 6-6"/></svg>
+            </a>
+            <div class="menu" id="main-menu" role="menu"></div>
+          </div>
+          <div class="dd">
+            <button class="btn" id="other-btn" aria-haspopup="true" aria-expanded="false">
+              <span data-i18n="other">Other systems</span>
+              <svg class="i chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="menu wide" id="other-menu" role="menu">
+              <div class="tabs" id="other-tabs"></div>
+              <div id="other-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="vline reveal"><span data-i18n="version">Version</span> <b id="ver">…</b> · <a href="changelog.html" data-i18n="whatsnew">what's new</a> · <a href="https://github.com/erqf1/gitline/releases"><span data-i18n="all_dl">all downloads on GitHub</span></a></div>
+        <div class="chips reveal">
+          <button class="chip" data-tab="windows">Windows</button>
+          <button class="chip" data-tab="macos">macOS</button>
+          <button class="chip" data-tab="linux">.deb</button>
+          <button class="chip" data-tab="linux">pacman</button>
+          <button class="chip" data-tab="linux">tar.gz</button>
+        </div>
+      </div>
+
+      <div class="stage reveal">
+        <div class="window"><img id="hero-img" src="img/history-en.webp" alt="Gitline showing the history of a project with its branch graph"></div>
+      </div>
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat"><b class="grad-text">0</b><span data-i18n="s1">commands to remember</span></div>
+      <div class="stat"><b class="grad-text">0</b><span data-i18n="s2">passwords stored by Gitline</span></div>
+      <div class="stat"><b class="grad-text">3</b><span data-i18n="s3">systems: Windows, Linux, macOS</span></div>
+      <div class="stat"><b class="grad-text">165</b><span data-i18n="s4">automatic checks before every release</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <p class="label reveal" data-i18n="how_l">How it works</p>
+    <h2 class="reveal" data-i18n="how_h">Three steps, no commands.</h2>
+    <p class="sub reveal" data-i18n="how_s">Gitline uses the Git that is already on your computer and puts a calm, clear face on it.</p>
+    <div class="steps">
+      <div class="gcard reveal"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><span class="n">01</span><h3 data-i18n="st1_h">Open a project</h3><p data-i18n="st1_p">Open a folder, clone a project from GitHub or GitLab by its address, or start a new repository. On Windows, right-click a folder and choose “Open with Gitline”.</p></div>
+      <div class="gcard reveal"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg></div><span class="n">02</span><h3 data-i18n="st2_h">See and pick changes</h3><p data-i18n="st2_p">Every changed file with its lines in color. Stage whole files, single sections or even single lines for the next commit.</p></div>
+      <div class="gcard reveal"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 20V7M6.5 12.5 12 7l5.5 5.5M5 3.5h14"/></svg></div><span class="n">03</span><h3 data-i18n="st3_h">Commit and push</h3><p data-i18n="st3_p">Write a short summary, press Commit, then Push. Gitline shows how many commits are waiting and tells you in plain words if the server has newer ones.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="padding-top:20px">
+  <div class="wrap">
+    <p class="label reveal" data-i18n="f_l">Features</p>
+    <h2 class="reveal" data-i18n="f_h">Everything you do with Git every day.</h2>
+    <p class="sub reveal" data-i18n="f_s">Clear for beginners, quick for people who know Git well.</p>
+    <div class="bento">
+      <div class="gcard c4 reveal">
+        <h3 data-i18n="b1_h">Changes you can actually read</h3>
+        <p data-i18n="b1_p">Side by side or one below the other, with colors for JavaScript, Python, HTML, CSS, C, Go, Rust and many more. Long lines wrap, huge diffs stay fast.</p>
+        <div class="demo rows"><div><span data-i18n="r_video">Changes</span><b>app.js · +6 −3</b></div><div><span data-i18n="r_audio">Staged</span><b>style.css · +4</b></div><div><span data-i18n="r_image">Conflicts</span><b>README.md</b></div></div>
+      </div>
+      <div class="gcard c2 reveal">
+        <h3 data-i18n="b2_h">Stage single sections</h3>
+        <p data-i18n="b2_p">Put only part of a file into a commit: one section with a click, or single lines by clicking their numbers.</p>
+      </div>
+      <div class="gcard c2 reveal">
+        <h3 data-i18n="b3_h">Branches in one click</h3>
+        <p data-i18n="b3_p">Create, switch, rename, merge and delete. See which commits are only on one side before you merge.</p>
+        <div class="demo pills"><span class="pill on">main</span><span class="pill">feature/login</span><span class="pill">fix/typo</span></div>
+      </div>
+      <div class="gcard c2 reveal">
+        <h3 data-i18n="b4_h">History with a graph</h3>
+        <p data-i18n="b4_p">See where branches split and meet, search messages, authors and hashes, and follow a single file through renames.</p>
+      </div>
+      <div class="gcard c2 reveal">
+        <h3 data-i18n="b5_h">Conflicts without panic</h3>
+        <p data-i18n="b5_p">The clashing blocks are colored. Keep your version, take theirs, or open the file in Textline, then finish the merge.</p>
+      </div>
+      <div class="gcard c3 reveal">
+        <h3 data-i18n="b6_h">Stash, tags and .gitignore</h3>
+        <p data-i18n="b6_p">Put half-done work aside and bring it back later. Mark releases with tags and push them. Ignore files with a right-click or start from ready-made templates.</p>
+        <div class="demo pills"><span class="pill on">Stash</span><span class="pill">v1.0.0</span><span class="pill">node_modules/</span><span class="pill">*.log</span></div>
+      </div>
+      <div class="gcard c3 reveal">
+        <h3 data-i18n="b7_h">Pictures too</h3>
+        <p data-i18n="b7_p">Changed images are shown before and after, with their size, so you see at a glance what a commit did to your logo.</p>
+        <div class="demo pills"><span class="pill on">PNG</span><span class="pill">JPG</span><span class="pill">SVG</span><span class="pill">WebP</span></div>
+      </div>
+      <div class="gcard c3 reveal" style="background:linear-gradient(135deg,color-mix(in srgb,var(--a1) 14%,var(--card-solid)),var(--card-solid) 60%)">
+        <div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <h3 data-i18n="b8_h">Your sign-in stays with your system</h3>
+        <p data-i18n="b8_p">Gitline never sees or stores passwords or tokens. Signing in to GitHub or GitLab goes through the Git Credential Manager of your system, the same one the terminal uses.</p>
+      </div>
+      <div class="gcard c3 reveal">
+        <div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3 data-i18n="b9_h">Hard to break things</h3>
+        <p data-i18n="b9_p">Anything that throws work away asks first. Discarded new files go to the trash, and when switching branches would overwrite changes, Gitline offers to stash them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="look" style="padding-top:30px">
+  <div class="wrap center">
+    <p class="label reveal" data-i18n="l_l">Screenshots</p>
+    <h2 class="reveal" data-i18n="l_h">See it in action.</h2>
+    <p class="sub reveal" data-i18n="l_s">Real screenshots from Gitline, in your language.</p>
+    <div class="gallery reveal" id="gallery">
+      <button type="button" data-img="changes" class="on" data-i18n="g1">Changes</button>
+      <button type="button" data-img="branches" data-i18n="g2">Branches</button>
+      <button type="button" data-img="conflict" data-i18n="g3">Conflicts</button>
+      <button type="button" data-img="start" data-i18n="g4">Start</button>
+    </div>
+    <div class="frame reveal"><div class="tb"><i></i><i></i><i></i></div><img id="gal-img" src="img/changes-en.webp" alt="Gitline screenshot" loading="lazy"></div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="center">
+      <p class="label reveal" data-i18n="d_l">Download</p>
+      <h2 class="reveal" data-i18n="d_h">Get Gitline.</h2>
+      <p class="sub reveal" data-i18n="d_s">Free for everyone. Pick your system. Every file comes straight from the newest GitHub release.</p>
+    </div>
+    <div class="dlpanel reveal">
+      <div class="tabs" id="panel-tabs"></div>
+      <div id="panel-list"></div>
+    </div>
+    <p class="note" data-i18n="d_note">Gitline needs Git itself: on Windows “Git for Windows” from git-scm.com, on Linux the git package, on macOS Git from git-scm.com or the Xcode command line tools. macOS 12 Monterey or newer. The app is not notarized by Apple: right-click → Open the first time. If macOS says it is damaged, run “xattr -cr Gitline.app” once in the Terminal.</p>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:40px">
+  <div class="wrap" style="max-width:820px">
+    <div class="center"><p class="label reveal">FAQ</p><h2 class="reveal" data-i18n="q_h">Questions</h2></div>
+    <details class="reveal"><summary data-i18n="q1">Is it really free?</summary><p data-i18n="q1a">Yes. Gitline is open source under the Apache 2.0 license, with no account, no ads and no tracking.</p></details>
+    <details class="reveal"><summary data-i18n="q2">Do I need to install Git?</summary><p data-i18n="q2a">Yes, Gitline uses the Git on your computer, so it behaves exactly like Git in the terminal. If Git is missing, Gitline says so and links to the download.</p></details>
+    <details class="reveal"><summary data-i18n="q3">Where do my passwords go?</summary><p data-i18n="q3a">Not to Gitline. It never asks for, sees or stores passwords or tokens. When a server wants you to sign in, Git asks the credential manager of your system, which shows its own window. On Windows that comes with Git for Windows.</p></details>
+    <details class="reveal"><summary data-i18n="q4">Does it work with GitHub, GitLab and others?</summary><p data-i18n="q4a">Yes. Gitline talks to any server Git can reach, over HTTPS or SSH: GitHub, GitLab, Codeberg, Bitbucket or your own.</p></details>
+    <details class="reveal"><summary data-i18n="q5">Can I break my project?</summary><p data-i18n="q5a">Everything that throws work away asks first, and discarded new files go to the trash. Gitline only runs normal Git commands, so you can always continue in the terminal.</p></details>
+    <details class="reveal"><summary data-i18n="q6">What happens with conflicts?</summary><p data-i18n="q6a">Gitline lists the files, colors both versions and lets you keep yours, take theirs or edit the file, for example in Textline. When everything is solved, one click finishes the merge. You can always abort.</p></details>
+    <details class="reveal"><summary data-i18n="q7">Which languages does the app speak?</summary><p data-i18n="q7a">English and German. It follows your system language and can be changed in the settings.</p></details>
+  </div>
+</section>
+
+<section style="padding-top:20px">
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2 data-i18n="cta_h">Git, but friendly.</h2>
+      <p class="sub" style="margin:0 auto 30px" data-i18n="cta_s">Download it once and keep your projects tidy from then on.</p>
+      <div class="dlui"><a class="btn pri" href="#download"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span data-i18n="cta_b">Download Gitline</span></a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Gitline · Apache License 2.0</span>
+    <span><a href="changelog.html">Changelog</a> · <a href="https://github.com/erqf1/gitline">GitHub</a> · <a href="https://github.com/erqf1/gitline/blob/main/LICENSE">License</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var OWNER = 'erqf1', REPO = 'gitline';
+  var RELEASES = 'https://github.com/' + OWNER + '/' + REPO + '/releases/latest';
+
+  var ICON = {
+    windows: '<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M3 5.5l8-1.1v7.1H3zM12 4.3l9-1.3v8.5h-9zM3 12.5h8v7.1l-8-1.1zM12 12.5h9V21l-9-1.3z"/></svg>',
+    macos: '<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M16.4 12.6c0-2.4 2-3.5 2.1-3.6-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.3-.9C6 7.2 4.4 8.2 3.5 9.7c-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.5 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8 2.2-1.2 3.1-2.4c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.5zM14 5.3c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg>',
+    linux: '<svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 10l3 2-3 2M13 14h3"/></svg>'
+  };
+  // Gitline-Dateien tragen die Versionsnummer im Namen: Link und Größe kommen aus dem neuesten Release (GitHub-API)
+  var DL = {
+    windows: [
+      { re: /^Gitline-Setup-.*\.exe$/, t: { en: 'Installer', de: 'Installer' }, d: { en: 'recommended · “Open with Gitline” on folders, updates itself', de: 'empfohlen · „Mit Gitline öffnen“ bei Ordnern, aktualisiert sich selbst' } },
+      { re: /^Gitline-.*-portable\.exe$/, t: { en: 'Portable', de: 'Portabel' }, d: { en: 'no installation · Windows 10+', de: 'keine Installation · ab Windows 10' } }
+    ],
+    linux: [
+      { re: /-amd64\.deb$/, t: { en: 'Debian / Ubuntu (.deb)', de: 'Debian / Ubuntu (.deb)' }, d: { en: 'also Mint, Pop!_OS, elementary', de: 'auch Mint, Pop!_OS, elementary' }, cmd: 'cd ~/Downloads && sudo apt install ./FILE' },
+      { re: /-x86_64\.pacman$/, t: { en: 'Arch (pacman)', de: 'Arch (pacman)' }, d: { en: 'also Manjaro, EndeavourOS', de: 'auch Manjaro, EndeavourOS' }, cmd: 'cd ~/Downloads && sudo pacman -U ./FILE' },
+      { re: /-x64\.tar\.gz$/, t: { en: 'tar.gz', de: 'tar.gz' }, d: { en: 'any distribution · no installation needed', de: 'jede Distribution · ohne Installation' }, cmd: 'mkdir -p ~/.local/opt/gitline && tar xzf ~/Downloads/FILE -C ~/.local/opt/gitline --strip-components=1 && ~/.local/opt/gitline/gitline' }
+    ],
+    macos: [
+      { re: /-mac-arm64\.zip$/, t: { en: 'Apple Silicon', de: 'Apple Silicon' }, d: { en: 'M1, M2, M3, M4 and newer', de: 'M1, M2, M3, M4 und neuer' } },
+      { re: /-mac-x64\.zip$/, t: { en: 'Intel', de: 'Intel' }, d: { en: 'Macs with an Intel processor', de: 'Macs mit Intel-Prozessor' } }
+    ]
+  };
+  var OSNAME = { windows: 'Windows', macos: 'macOS', linux: 'Linux' };
+  var lang = 'en', assets = [];
+  var ua = navigator.userAgent, myOS = /Windows/.test(ua) ? 'windows' : /Mac/.test(ua) && !/iPhone|iPad/.test(ua) ? 'macos' : /Linux|X11/.test(ua) && !/Android/.test(ua) ? 'linux' : 'windows';
+  function find(it) { for (var i = 0; i < assets.length; i++) if (it.re.test(assets[i].name)) return assets[i]; return null; }
+  function href(it) { var a = find(it); return a ? a.browser_download_url : RELEASES; }
+  function fmtSize(it) { var a = find(it); if (!a) return ''; var mb = a.size / 1048576; return (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + ' MB'; }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function itemHTML(it, withIcon, os) {
+    return '<a class="item" role="menuitem" href="' + href(it) + '">' + (withIcon ? '<span class="dlic">' + ICON[os] + '</span>' : '') +
+      '<span class="t"><b>' + it.t[lang] + '</b><small>' + it.d[lang] + '</small></span><span class="sz">' + fmtSize(it) + '</span></a>';
+  }
+  function cmdHTML(it) {
+    if (!it.cmd) return '';
+    var a = find(it), cmd = it.cmd.replace('FILE', a ? a.name : (lang === 'de' ? '<Datei>' : '<file>'));
+    return '<div class="cmd"><code>' + esc(cmd) + '</code><button type="button" data-copy="' + esc(cmd) + '" aria-label="Copy"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></button></div>';
+  }
+  function tabsHTML(active, attr) { return Object.keys(OSNAME).map(function (k) { return '<button type="button" ' + attr + '="' + k + '" class="' + (k === active ? 'on' : '') + '">' + OSNAME[k] + '</button>'; }).join(''); }
+  var otherTab = myOS, panelTab = myOS;
+  function render() {
+    var list = DL[myOS], single = list.length === 1;
+    $('#main-label').textContent = { en: 'Download for ' + OSNAME[myOS], de: 'Für ' + OSNAME[myOS] + ' herunterladen' }[lang];
+    $('#main-chev').style.display = single ? 'none' : '';
+    $('#main-btn').href = single ? href(list[0]) : '#download';
+    $('#main-menu').innerHTML = single ? '' : list.map(function (it) { return itemHTML(it, false, myOS); }).join('');
+    $('#other-tabs').innerHTML = tabsHTML(otherTab, 'data-otab');
+    $('#other-list').innerHTML = DL[otherTab].map(function (it) { return itemHTML(it, false, otherTab); }).join('');
+    $('#panel-tabs').innerHTML = tabsHTML(panelTab, 'data-ptab');
+    $('#panel-list').innerHTML = DL[panelTab].map(function (it) { return itemHTML(it, true, panelTab) + cmdHTML(it); }).join('');
+  }
+  function closeAll(except) { $$('.menu.open').forEach(function (m) { if (m !== except) { m.classList.remove('open'); var b = m.parentNode.querySelector('.btn'); if (b) b.setAttribute('aria-expanded', 'false'); } }); }
+  function toggle(btn, menu) { var open = !menu.classList.contains('open'); closeAll(open ? menu : null); menu.classList.toggle('open', open); btn.setAttribute('aria-expanded', open); }
+  $('#main-btn').addEventListener('click', function (e) { if (DL[myOS].length > 1) { e.preventDefault(); toggle(this, $('#main-menu')); } });
+  $('#other-btn').addEventListener('click', function () { toggle(this, $('#other-menu')); });
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t.closest('.dd')) closeAll();
+    var ot = t.closest('[data-otab]'); if (ot) { otherTab = ot.dataset.otab; render(); $('#other-menu').classList.add('open'); }
+    var pt = t.closest('[data-ptab]'); if (pt) { panelTab = pt.dataset.ptab; render(); }
+    var cp = t.closest('[data-copy]'); if (cp) { try { navigator.clipboard.writeText(cp.dataset.copy); cp.style.color = 'var(--label)'; setTimeout(function () { cp.style.color = ''; }, 1200); } catch (x) {} }
+    var chip = t.closest('.chip'); if (chip) { otherTab = chip.dataset.tab; render(); closeAll(); $('#other-menu').classList.add('open'); $('#other-btn').setAttribute('aria-expanded', 'true'); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+  // Neueste Version live: Nummer, "Neu"-Hinweis, Download-Links und Größen
+  var latestVer = '';
+  fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/releases/latest').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (!j) return;
+    latestVer = (j.tag_name || '').replace(/^v/, '');
+    assets = j.assets || [];
+    $('#ver').textContent = latestVer || '–';
+    showNews();
+    render();
+  }).catch(function () { $('#ver').textContent = '–'; });
+  function showNews() {
+    if (!latestVer) return;
+    $('#news').innerHTML = (lang === 'de' ? 'Neu: Version ' : 'New: version ') + latestVer + ' · <a href="changelog.html">' + (lang === 'de' ? 'was ist neu' : "what's new") + '</a>';
+    $('.badge b').textContent = lang === 'de' ? 'Neu' : 'New';
+  }
+
+  $('#theme-btn').addEventListener('click', function () {
+    var t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('theme', t); } catch (e) {}
+  });
+
+  var galCur = 'changes';
+  function galSrc(n) { return 'img/' + n + '-' + lang + '.webp'; }
+  $('#gallery').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-img]'); if (!b) return;
+    $$('button', $('#gallery')).forEach(function (x) { x.classList.toggle('on', x === b); });
+    galCur = b.dataset.img;
+    var img = $('#gal-img'); img.style.opacity = 0;
+    setTimeout(function () { img.src = galSrc(galCur); img.style.opacity = 1; }, 160);
+  });
+
+  var T = { de: {
+    nav_how:'So funktioniert’s', nav_features:'Funktionen', nav_look:'Bilder', nav_download:'Download',
+    badge_new:'Kostenlos', badge_t:'Windows · Linux · macOS',
+    h1a:'Git, ganz ohne', h1b:'Terminal.',
+    lead:'Gitline zeigt, was sich in deinem Projekt geändert hat, und macht Commit, Branch, Pull und Push zu einem Klick. Einfach genug für dein erstes Repository, schnell genug für jeden Tag.',
+    other:'Anderes System', version:'Version', whatsnew:'was ist neu', all_dl:'alle Downloads auf GitHub',
+    s1:'Befehle zum Auswendiglernen', s2:'Passwörter speichert Gitline', s3:'Systeme: Windows, Linux, macOS', s4:'automatische Prüfungen vor jedem Release',
+    how_l:'So funktioniert’s', how_h:'Drei Schritte, keine Befehle.', how_s:'Gitline benutzt das Git, das schon auf deinem Computer ist, und gibt ihm ein ruhiges, klares Gesicht.',
+    st1_h:'Projekt öffnen', st1_p:'Ordner öffnen, ein Projekt von GitHub oder GitLab per Adresse klonen oder ein neues Repository anlegen. Unter Windows geht auch Rechtsklick auf einen Ordner und „Mit Gitline öffnen“.',
+    st2_h:'Änderungen sehen und wählen', st2_p:'Jede geänderte Datei mit ihren Zeilen in Farbe. Ganze Dateien, einzelne Abschnitte oder sogar einzelne Zeilen für den nächsten Commit vormerken.',
+    st3_h:'Committen und pushen', st3_p:'Kurze Zusammenfassung schreiben, Commit drücken, dann Push. Gitline zeigt, wie viele Commits warten, und sagt in klaren Worten, wenn der Server neuere hat.',
+    f_l:'Funktionen', f_h:'Alles, was du täglich mit Git machst.', f_s:'Klar für Einsteiger, flott für alle, die Git gut kennen.',
+    b1_h:'Änderungen, die man lesen kann', b1_p:'Nebeneinander oder untereinander, mit Farben für JavaScript, Python, HTML, CSS, C, Go, Rust und viele mehr. Lange Zeilen brechen um, große Diffs bleiben schnell.',
+    r_video:'Änderungen', r_audio:'Vorgemerkt', r_image:'Konflikte',
+    b2_h:'Einzelne Abschnitte vormerken', b2_p:'Nur einen Teil einer Datei in den Commit nehmen: einen Abschnitt per Klick oder einzelne Zeilen über ihre Nummern.',
+    b3_h:'Branches mit einem Klick', b3_p:'Anlegen, wechseln, umbenennen, zusammenführen und löschen. Vor dem Zusammenführen siehst du, welche Commits nur auf einer Seite sind.',
+    b4_h:'Verlauf mit Grafik', b4_p:'Sieh, wo sich Branches trennen und treffen, suche in Nachrichten, Autoren und Hashes und verfolge eine Datei auch über Umbenennungen.',
+    b5_h:'Konflikte ohne Panik', b5_p:'Die kollidierenden Blöcke sind farbig. Deine Version behalten, ihre nehmen oder die Datei in Textline öffnen, dann das Zusammenführen abschließen.',
+    b6_h:'Stash, Tags und .gitignore', b6_p:'Halbfertiges beiseitelegen und später zurückholen. Releases mit Tags markieren und pushen. Dateien per Rechtsklick ignorieren oder mit fertigen Vorlagen starten.',
+    b7_h:'Auch Bilder', b7_p:'Geänderte Bilder erscheinen vorher und nachher mit ihrer Größe, so siehst du sofort, was ein Commit mit deinem Logo gemacht hat.',
+    b8_h:'Deine Anmeldung bleibt beim System', b8_p:'Gitline sieht und speichert nie Passwörter oder Tokens. Die Anmeldung bei GitHub oder GitLab läuft über den Git Credential Manager deines Systems, denselben wie im Terminal.',
+    b9_h:'Schwer, etwas kaputt zu machen', b9_p:'Alles, was Arbeit wegwirft, fragt vorher. Verworfene neue Dateien landen im Papierkorb, und würde ein Branch-Wechsel Änderungen überschreiben, bietet Gitline an, sie zu stashen.',
+    l_l:'Bilder', l_h:'So sieht’s aus.', l_s:'Echte Bilder aus Gitline, in deiner Sprache.', g1:'Änderungen', g2:'Branches', g3:'Konflikte', g4:'Start',
+    d_l:'Download', d_h:'Hol dir Gitline.', d_s:'Für alle kostenlos. System wählen, jede Datei kommt direkt aus dem neuesten GitHub-Release.',
+    d_note:'Gitline braucht Git selbst: unter Windows „Git for Windows“ von git-scm.com, unter Linux das Paket git, auf dem Mac Git von git-scm.com oder die Xcode-Befehlszeilenwerkzeuge. Ab macOS 12 Monterey. Die App ist nicht von Apple beglaubigt: beim ersten Mal Rechtsklick → Öffnen. Sagt macOS „beschädigt“, einmal im Terminal „xattr -cr Gitline.app“ ausführen.',
+    q_h:'Fragen',
+    q1:'Ist es wirklich kostenlos?', q1a:'Ja. Gitline ist Open Source unter der Apache-2.0-Lizenz, ohne Konto, ohne Werbung und ohne Tracking.',
+    q2:'Muss ich Git installieren?', q2a:'Ja, Gitline benutzt das Git auf deinem Computer und verhält sich deshalb genau wie Git im Terminal. Fehlt Git, sagt Gitline das und verlinkt den Download.',
+    q3:'Wo landen meine Passwörter?', q3a:'Nicht bei Gitline. Es fragt nie nach Passwörtern oder Tokens, sieht und speichert sie nicht. Will ein Server eine Anmeldung, fragt Git den Credential Manager deines Systems, der ein eigenes Fenster zeigt. Unter Windows kommt er mit Git for Windows.',
+    q4:'Geht das mit GitHub, GitLab und anderen?', q4a:'Ja. Gitline spricht mit jedem Server, den Git erreicht, über HTTPS oder SSH: GitHub, GitLab, Codeberg, Bitbucket oder dein eigener.',
+    q5:'Kann ich mein Projekt kaputt machen?', q5a:'Alles, was Arbeit wegwirft, fragt vorher, und verworfene neue Dateien landen im Papierkorb. Gitline führt nur normale Git-Befehle aus, du kannst also jederzeit im Terminal weitermachen.',
+    q6:'Was passiert bei Konflikten?', q6a:'Gitline listet die Dateien, färbt beide Versionen und lässt dich deine behalten, ihre nehmen oder die Datei bearbeiten, zum Beispiel in Textline. Ist alles gelöst, schließt ein Klick das Zusammenführen ab. Abbrechen geht immer.',
+    q7:'Welche Sprachen spricht die App?', q7a:'Englisch und Deutsch. Sie folgt der Systemsprache und lässt sich in den Einstellungen umstellen.',
+    cta_h:'Git, aber freundlich.', cta_s:'Einmal herunterladen und ab dann deine Projekte ordentlich halten.', cta_b:'Gitline herunterladen'
+  } };
+  var orig = {};
+  $$('[data-i18n]').forEach(function (el) { orig[el.dataset.i18n] = el.innerHTML; });
+  function applyLang(l) {
+    lang = l; document.documentElement.lang = l;
+    $$('[data-i18n]').forEach(function (el) { var k = el.dataset.i18n, v = l === 'en' ? orig[k] : (T[l] && T[l][k]); if (v != null) el.innerHTML = v; });
+    $('#hero-img').src = 'img/history-' + l + '.webp';
+    $('#gal-img').src = galSrc(galCur);
+    showNews();
+    render();
+    try { localStorage.setItem('lang', l); } catch (e) {}
+  }
+  var sel = $('#lang'), saved = null;
+  try { saved = localStorage.getItem('lang'); } catch (e) {}
+  var start = saved && (saved === 'en' || T[saved]) ? saved : ((navigator.language || '').indexOf('de') === 0 ? 'de' : 'en');
+  sel.value = start;
+  sel.addEventListener('change', function () { applyLang(sel.value); });
+  applyLang(start);
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .12 });
+    $$('.reveal').forEach(function (el) { io.observe(el); });
+  } else { $$('.reveal').forEach(function (el) { el.classList.add('in'); }); }
+})();
+</script>
+<!-- Linux-Download: Installationsbefehl als Fenster (der Download selbst läuft normal weiter) -->
+<style>
+  .lx-overlay { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(3px); opacity: 0; transition: opacity .15s; }
+  .lx-overlay.show { opacity: 1; }
+  .lx-card { width: min(560px, 100%); border-radius: 18px; padding: 22px 22px 18px;
+    background: var(--card-solid, var(--card, #1c1f27)); color: var(--text, #eef0f5);
+    border: 1px solid var(--line2, var(--line, rgba(255,255,255,.14))); box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    font-family: inherit; }
+  .lx-card h3 { margin: 0 0 6px; font-size: 19px; }
+  .lx-card p { margin: 0 0 12px; opacity: .8; font-size: 14.5px; line-height: 1.5; }
+  .lx-cmd { display: flex; gap: 8px; align-items: stretch; margin: 0 0 12px; }
+  .lx-cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; padding: 11px 13px; border-radius: 10px;
+    background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.1); font: 13px ui-monospace, 'Cascadia Mono', Consolas, monospace; color: #e8ffe9; }
+  .lx-btn { border: 0; border-radius: 10px; padding: 0 14px; font-family: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer;
+    background: var(--accent, var(--a1, #4ade9b)); color: var(--accentText, #06150e); }
+  .lx-btn.ghost { background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.18); height: 38px; }
+  .lx-note { font-size: 13px !important; opacity: .7 !important; }
+  .lx-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .lx-cmd code { background: #10131a; } }
+</style>
+<script>
+(function () {
+  var CFG = {
+    tar: function (f) { return 'mkdir -p ~/.local/opt/gitline && tar xzf ~/Downloads/' + f + ' -C ~/.local/opt/gitline --strip-components=1 && ~/.local/opt/gitline/gitline'; },
+    extra: function (kind, de) {
+      return kind === 'tar' ? (de ? 'Startet sie mit einer Meldung zum „SUID sandbox helper“ nicht: im Ordner „sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox“ ausführen.'
+                                  : 'If it refuses to start with a "SUID sandbox helper" message, run "sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox" in its folder.') : '';
+    }
+  };
+  var de = function () { return (document.documentElement.lang || navigator.language || '').indexOf('de') === 0; };
+  var T = {
+    title: ['Install on Linux', 'Unter Linux installieren'],
+    text: ['Your download has started. When it is done, open a terminal and run:', 'Der Download läuft. Wenn er fertig ist, öffne ein Terminal und führe aus:'],
+    copy: ['Copy', 'Kopieren'], copied: ['Copied ✓', 'Kopiert ✓'], close: ['Close', 'Schließen'],
+    deb: ['For Debian, Ubuntu, Mint, Pop!_OS …', 'Für Debian, Ubuntu, Mint, Pop!_OS …'],
+    arch: ['For Arch, Manjaro, EndeavourOS …', 'Für Arch, Manjaro, EndeavourOS …'],
+    tar: ['Works on any distribution (installs for your user only).', 'Läuft auf jeder Distribution (installiert nur für deinen Benutzer).']
+  };
+  var tr = function (k) { return T[k][de() ? 1 : 0]; };
+  function commandFor(href) {
+    var f = href.split('?')[0].split('#')[0].split('/').pop();
+    if (/\.deb$/i.test(f)) return { kind: 'deb', cmd: 'cd ~/Downloads && sudo apt install ./' + f };
+    if (/\.pkg\.tar\.zst$|\.pacman$/i.test(f)) return { kind: 'arch', cmd: 'cd ~/Downloads && sudo pacman -U ./' + f };
+    if (/\.tar\.gz$/i.test(f)) return { kind: 'tar', cmd: CFG.tar(f) };
+    return null;
+  }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function show(c) {
+    var old = document.querySelector('.lx-overlay'); if (old) old.remove();
+    var ov = el('div', 'lx-overlay'), card = el('div', 'lx-card');
+    card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
+    card.appendChild(el('h3', '', tr('title')));
+    card.appendChild(el('p', '', tr('text')));
+    var row = el('div', 'lx-cmd'), code = el('code', '', c.cmd), copy = el('button', 'lx-btn', tr('copy'));
+    copy.type = 'button';
+    copy.onclick = function () {
+      var done = function () { copy.textContent = tr('copied'); setTimeout(function () { copy.textContent = tr('copy'); }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(c.cmd).then(done, done); else done();
+    };
+    row.appendChild(code); row.appendChild(copy); card.appendChild(row);
+    card.appendChild(el('p', 'lx-note', tr(c.kind)));
+    if (CFG.extra) { var x = CFG.extra(c.kind, de()); if (x) card.appendChild(el('p', 'lx-note', x)); }
+    var foot = el('div', 'lx-foot'), close = el('button', 'lx-btn ghost', tr('close'));
+    close.type = 'button'; foot.appendChild(close); card.appendChild(foot);
+    ov.appendChild(card); document.body.appendChild(ov);
+    requestAnimationFrame(function () { ov.classList.add('show'); });
+    var shut = function () { ov.remove(); document.removeEventListener('keydown', onKey); };
+    var onKey = function (e) { if (e.key === 'Escape') shut(); };
+    close.onclick = shut;
+    ov.addEventListener('click', function (e) { if (e.target === ov) shut(); });
+    document.addEventListener('keydown', onKey);
+    copy.focus();
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var c = commandFor(a.getAttribute('href'));
+    if (c) setTimeout(function () { show(c); }, 60);  // Download startet trotzdem normal
+  });
+})();
+</script>
+</body>
+</html>
