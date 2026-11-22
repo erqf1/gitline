@@ -1,7 +1,7 @@
 {
   "name": "gitline",
   "productName": "Gitline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Einfache, schöne Oberfläche für Git: Änderungen sehen, vormerken, committen, Branches und Push ohne Terminal.",
   "main": "src/main.js",
   "private": true,
@@ -81,7 +81,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": false,
       "createStartMenuShortcut": true,
       "include": "build/installer.nsh"
     },
